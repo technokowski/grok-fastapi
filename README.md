@@ -67,7 +67,7 @@ python3 -m venv venv
 
 Always start with `./run.sh` or `./venv/bin/uvicorn ...`. A plain `uvicorn` command often picks up a different Python (this is the `sqlalchemy` error below).
 
-Open http://127.0.0.1:8000
+The app listens on port **8083** on all interfaces (`0.0.0.0`), which is what nginx and other machines on the network need. Point the reverse proxy at `http://127.0.0.1:8083` (or this host’s LAN address). Direct check: http://127.0.0.1:8083
 
 Fresh `data/` (no copied database):
 

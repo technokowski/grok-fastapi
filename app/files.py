@@ -12,14 +12,20 @@ from app.config import (
     FFMPEG_BIN,
     FFMPEG_TIMEOUT_SECS,
     MAX_UPLOAD_BYTES,
+    SHARE_DIR,
     UPLOADS_DIR,
 )
+from app.security import new_token
 
 SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def ensure_uploads_dir() -> None:
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def ensure_share_dir() -> None:
+    SHARE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def user_dir(username: str) -> Path:
@@ -163,3 +169,38 @@ def _format_size(n: int) -> str:
     if n < 1024 * 1024:
         return f"{n / 1024:.1f} KB"
     return f"{n / (1024 * 1024):.1f} MB"
+
+
+def copy_to_share(src: Path, original_name: str) -> str:
+    ensure_share_dir()
+    safe = safe_filename(original_name) or "file"
+    stored_name = f"{new_token(8)}_{safe}"
+    dest = (SHARE_DIR / stored_name).resolve()
+    try:
+        dest.relative_to(SHARE_DIR.resolve())
+    except ValueError as exc:
+        raise ValueError("Invalid share path.") from exc
+    shutil.copy2(src, dest)
+    return stored_name
+
+
+def resolve_share_file(stored_name: str) -> Path | None:
+    if not stored_name or stored_name != Path(stored_name).name:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", stored_name):
+        return None
+    ensure_share_dir()
+    path = (SHARE_DIR / stored_name).resolve()
+    try:
+        path.relative_to(SHARE_DIR.resolve())
+    except ValueError:
+        return None
+    if not path.is_file():
+        return None
+    return path
+
+
+def remove_share_file(stored_name: str) -> None:
+    path = resolve_share_file(stored_name)
+    if path is not None:
+        path.unlink(missing_ok=True)

@@ -23,6 +23,7 @@ class User(Base):
 
     sessions: Mapped[list["AuthSession"]] = relationship(back_populates="user")
     reset_tokens: Mapped[list["PasswordReset"]] = relationship(back_populates="user")
+    shared_files: Mapped[list["SharedFile"]] = relationship(back_populates="user")
 
 
 class AuthSession(Base):
@@ -48,6 +49,18 @@ class PasswordReset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     user: Mapped[User] = relationship(back_populates="reset_tokens")
+
+
+class SharedFile(Base):
+    __tablename__ = "shared_files"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    original_name: Mapped[str] = mapped_column(String(180), index=True)
+    stored_name: Mapped[str] = mapped_column(String(220), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped[User] = relationship(back_populates="shared_files")
 
 
 class LoginAttempt(Base):

@@ -111,3 +111,5 @@ th, td {
 }
 .inline { display: inline; }
 td .inline { margin-left: 0.75rem; }
+.shared-block { margin-top: 2.5rem; }
+.shared-block h2 { font-size: 1.15rem; margin: 0 0 0.5rem; }

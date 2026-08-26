@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import BOOTSTRAP_PASSWORD, BOOTSTRAP_USERNAME, DATA_DIR, DB_PATH
-from app.files import ensure_uploads_dir
+from app.files import ensure_share_dir, ensure_uploads_dir
 from app.models import Base, User
 from app.security import hash_password
 
@@ -19,6 +19,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 def init_db() -> None:
     ensure_uploads_dir()
+    ensure_share_dir()
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         count = db.scalar(select(func.count()).select_from(User)) or 0

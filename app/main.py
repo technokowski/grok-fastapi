@@ -21,17 +21,21 @@ from app.auth import (
     record_login_attempt,
     too_many_attempts,
 )
-from app.config import APP_DIR, PUBLIC_PATHS, PUBLIC_PREFIXES
+from app.config import APP_DIR, PUBLIC_PATHS, PUBLIC_PREFIXES, PUBLIC_SHARE_ENABLED
 from app.db import get_db, init_db
 from app.files import (
     convert_wav_to_mp3,
+    copy_to_share,
     delete_user_file,
     is_wav,
     list_user_files,
+    remove_share_file,
+    resolve_share_file,
     resolve_user_file,
+    safe_filename,
     save_upload,
 )
-from app.models import User
+from app.models import SharedFile, User
 from app.security import (
     hash_password,
     normalize_username,
@@ -97,6 +101,44 @@ async def auth_gate(request: Request, call_next):
     return await call_next(request)
 
 
+def public_shared_files(db: Session) -> list[dict]:
+    if not PUBLIC_SHARE_ENABLED:
+        return []
+    rows = db.execute(
+        select(SharedFile, User.username)
+        .join(User, User.id == SharedFile.user_id)
+        .order_by(SharedFile.created_at.desc())
+    ).all()
+    return [
+        {"id": item.id, "name": item.original_name, "username": username}
+        for item, username in rows
+    ]
+
+
+def shared_names_for(db: Session, user_id: int) -> set[str]:
+    if not PUBLIC_SHARE_ENABLED:
+        return set()
+    return set(
+        db.scalars(select(SharedFile.original_name).where(SharedFile.user_id == user_id))
+    )
+
+
+def drop_shares_for_file(db: Session, user_id: int, filename: str) -> None:
+    rows = list(
+        db.scalars(
+            select(SharedFile).where(
+                SharedFile.user_id == user_id,
+                SharedFile.original_name == filename,
+            )
+        )
+    )
+    for row in rows:
+        remove_share_file(row.stored_name)
+        db.delete(row)
+    if rows:
+        db.commit()
+
+
 # ---------------------------------------------------------------------------
 # Pages
 # To add a page:
@@ -122,12 +164,12 @@ def elite(request: Request):
 
 
 @app.get("/files")
-def files_page(request: Request):
-    return render(
-        request,
-        "files.html",
-        files=list_user_files(request.state.user.username),
-    )
+def files_page(request: Request, db: Session = Depends(get_db)):
+    files = list_user_files(request.state.user.username)
+    shared = shared_names_for(db, request.state.user.id)
+    for item in files:
+        item["shared"] = item["name"] in shared
+    return render(request, "files.html", files=files)
 
 
 @app.post("/files/upload")
@@ -171,6 +213,7 @@ def files_delete(
     request: Request,
     filename: str = Form(...),
     csrf: str = Form(""),
+    db: Session = Depends(get_db),
 ):
     if not check_csrf(request, csrf):
         return redirect("/files", "Invalid form token.", "error")
@@ -178,7 +221,73 @@ def files_delete(
         name = delete_user_file(request.state.user.username, filename)
     except ValueError as exc:
         return redirect("/files", str(exc), "error")
+    drop_shares_for_file(db, request.state.user.id, name)
     return redirect("/files", f"Deleted {name}.")
+
+
+@app.post("/files/share")
+def files_share(
+    request: Request,
+    filename: str = Form(...),
+    csrf: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not PUBLIC_SHARE_ENABLED:
+        return redirect("/files", "Sharing is turned off.", "error")
+    if not check_csrf(request, csrf):
+        return redirect("/files", "Invalid form token.", "error")
+    path = resolve_user_file(request.state.user.username, filename)
+    if path is None:
+        return redirect("/files", "File not found.", "error")
+    already = db.scalar(
+        select(SharedFile).where(
+            SharedFile.user_id == request.state.user.id,
+            SharedFile.original_name == path.name,
+        )
+    )
+    if already is not None:
+        return redirect("/files", f"{path.name} is already shared.")
+    stored = copy_to_share(path, path.name)
+    db.add(
+        SharedFile(
+            user_id=request.state.user.id,
+            original_name=path.name,
+            stored_name=stored,
+        )
+    )
+    db.commit()
+    return redirect("/files", f"Shared {path.name}.")
+
+
+@app.post("/files/unshare")
+def files_unshare(
+    request: Request,
+    filename: str = Form(...),
+    csrf: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not PUBLIC_SHARE_ENABLED:
+        return redirect("/files", "Sharing is turned off.", "error")
+    if not check_csrf(request, csrf):
+        return redirect("/files", "Invalid form token.", "error")
+    name = safe_filename(filename)
+    if not name:
+        return redirect("/files", "File not found.", "error")
+    drop_shares_for_file(db, request.state.user.id, name)
+    return redirect("/files", f"Stopped sharing {name}.")
+
+
+@app.get("/share/download/{share_id}")
+def share_download(share_id: int, db: Session = Depends(get_db)):
+    if not PUBLIC_SHARE_ENABLED:
+        return redirect("/login", "Sharing is turned off.", "error")
+    row = db.get(SharedFile, share_id)
+    if row is None:
+        return redirect("/login", "File not found.", "error")
+    path = resolve_share_file(row.stored_name)
+    if path is None:
+        return redirect("/login", "File not found.", "error")
+    return FileResponse(path, filename=row.original_name)
 
 
 # ---------------------------------------------------------------------------
@@ -187,8 +296,8 @@ def files_delete(
 
 
 @app.get("/login")
-def login_form(request: Request):
-    return render(request, "login.html")
+def login_form(request: Request, db: Session = Depends(get_db)):
+    return render(request, "login.html", shared_files=public_shared_files(db))
 
 
 @app.post("/login")
@@ -200,7 +309,13 @@ def login(
     db: Session = Depends(get_db),
 ):
     if not check_csrf(request, csrf):
-        return render(request, "login.html", error="Invalid form token. Try again.", status_code=403)
+        return render(
+            request,
+            "login.html",
+            error="Invalid form token. Try again.",
+            shared_files=public_shared_files(db),
+            status_code=403,
+        )
 
     username = normalize_username(username)
     ip = client_ip(request)
@@ -210,13 +325,20 @@ def login(
             request,
             "login.html",
             error="Too many sign-in attempts. Try again in 15 minutes.",
+            shared_files=public_shared_files(db),
             status_code=429,
         )
 
     user = authenticate(db, username, password)
     if user is None:
         record_login_attempt(db, username, ip, False)
-        return render(request, "login.html", error="Invalid username or password.", status_code=401)
+        return render(
+            request,
+            "login.html",
+            error="Invalid username or password.",
+            shared_files=public_shared_files(db),
+            status_code=401,
+        )
 
     record_login_attempt(db, username, ip, True)
     sid = create_session(db, user)

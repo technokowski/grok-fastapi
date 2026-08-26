@@ -118,4 +118,36 @@ python3 -m venv venv
 
 `which uvicorn` should print `.../grok-fastapi/venv/bin/uvicorn`, not `Library/Python/3.9/...`.
 
-Uploads live in `data/uploads/<username>/`. The user database is `data/app.db`.
+Uploads live in `data/uploads/<username>/`. Shared public copies live in `data/share/`. The user database is `data/app.db`.
+
+## Public shared files
+
+Signed-in users can **Share** a file on the Files page. A copy is stored in `data/share/` and listed on the sign-in page. Visitors can download those files without an account. They cannot upload, delete, or see anyone’s private folder.
+
+### Hide this section (no rollback needed)
+
+In `app/config.py`:
+
+```python
+PUBLIC_SHARE_ENABLED = False
+```
+
+Restart the app. The sign-in page looks as it did before, Share/Unshare disappear, and public download URLs stop working. Sign-in is unchanged. Set it back to `True` to turn sharing on again.
+
+### Roll back the whole feature
+
+A git snapshot was taken before this feature (`82eac8a`, message *Snapshot before public file sharing*):
+
+```bash
+cd /path/to/grok-fastapi
+git checkout 82eac8a -- .
+```
+
+That restores the project files from before sharing. It does not delete `data/` (your database and uploads). To also drop share records and copies:
+
+```bash
+rm -rf data/share
+# optional: sqlite3 data/app.db "DROP TABLE IF EXISTS shared_files;"
+```
+
+Then restart.

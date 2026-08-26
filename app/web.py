@@ -8,7 +8,14 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from app.auth import CurrentUser
-from app.config import APP_DIR, CSRF_COOKIE, FLASH_COOKIE, SESSION_COOKIE, SESSION_TTL_DAYS
+from app.config import (
+    APP_DIR,
+    CSRF_COOKIE,
+    FLASH_COOKIE,
+    PUBLIC_SHARE_ENABLED,
+    SESSION_COOKIE,
+    SESSION_TTL_DAYS,
+)
 from app.security import digest_equal, new_token
 
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
@@ -103,6 +110,7 @@ def render(request: Request, template: str, status_code: int = 200, **ctx) -> Re
             "nav_items": visible_nav(user),
             "csrf_token": csrf_token,
             "flash": flash,
+            "public_share_enabled": PUBLIC_SHARE_ENABLED,
             **ctx,
         },
         status_code=status_code,

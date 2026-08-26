@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Create user{% endblock %}
+{% block content %}
+<h1>Create user</h1>
+{% if error %}<p class="flash error">{{ error }}</p>{% endif %}
+<form method="post" action="/users/new" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <label>
+    Username
+    <input type="text" name="username" value="{{ username or '' }}" autocomplete="off" required autofocus>
+  </label>
+  <label>
+    Temporary password
+    <input type="password" name="password" autocomplete="new-password" required minlength="12">
+  </label>
+  <label>
+    Confirm password
+    <input type="password" name="confirm_password" autocomplete="new-password" required minlength="12">
+  </label>
+  <label class="check">
+    <input type="checkbox" name="is_admin">
+    Admin
+  </label>
+  <p class="muted">The new user must change this password on first sign-in.</p>
+  <button type="submit">Create user</button>
+</form>
+<p class="muted"><a href="/users">Back to users</a></p>
+{% endblock %}

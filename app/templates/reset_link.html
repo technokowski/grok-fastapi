@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Reset link{% endblock %}
+{% block content %}
+<h1>Reset link for {{ target_user.username }}</h1>
+<p>This URL works once and expires in one hour. Copy it now; it will not be shown again.</p>
+<p><input class="wide" type="text" readonly value="{{ reset_url }}"></p>
+<p class="muted"><a href="/users">Back to users</a></p>
+{% endblock %}

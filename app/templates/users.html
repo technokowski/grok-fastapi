@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1>Users</h1>
+<p><a href="/users/new">Create user</a></p>
+<table>
+  <thead>
+    <tr>
+      <th>Username</th>
+      <th>Role</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{% if u.is_admin %}admin{% else %}user{% endif %}</td>
+      <td>
+        {% if u.must_change_password %}must change password{% endif %}
+        {% if u.reset_requested %}reset requested{% endif %}
+        {% if not u.must_change_password and not u.reset_requested %}ok{% endif %}
+      </td>
+      <td>
+        <form method="post" action="/users/{{ u.id }}/reset-link" class="inline">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <button type="submit">Reset link</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

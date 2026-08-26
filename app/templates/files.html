@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Files{% endblock %}
+{% block content %}
+<h1>Files</h1>
+<p>Uploads go in your own folder. A <code>.wav</code> file is converted to MP3 with ffmpeg after upload.</p>
+<form method="post" action="/files/upload" enctype="multipart/form-data" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <label>
+    Choose a file
+    <input type="file" name="file" required>
+  </label>
+  <button type="submit">Upload</button>
+</form>
+{% if files %}
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Size</th>
+      <th>Modified</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in files %}
+    <tr>
+      <td>{{ f.name }}</td>
+      <td>{{ f.size }}</td>
+      <td>{{ f.modified }}</td>
+      <td>
+        <a href="/files/download/{{ f.name }}">Download</a>
+        <form method="post" action="/files/delete" class="inline">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <input type="hidden" name="filename" value="{{ f.name }}">
+          <button type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No files yet.</p>
+{% endif %}
+{% endblock %}

@@ -21,24 +21,19 @@
   <h2>Shared files</h2>
   <p class="muted">Download these without signing in.</p>
   {% if shared_files %}
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Shared by</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for f in shared_files %}
-      <tr>
-        <td>{{ f.name }}</td>
-        <td>{{ f.username }}</td>
-        <td><a href="/share/download/{{ f.id }}">Download</a></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <ul class="file-list">
+    {% for f in shared_files %}
+    <li class="file-row">
+      <div class="file-head">
+        <span class="file-name">{{ f.name }}</span>
+        <span class="file-size">{{ f.username }}</span>
+      </div>
+      <div class="file-actions">
+        <a class="action" href="/share/download/{{ f.id }}">Download</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
   {% else %}
   <p class="muted">No files are shared yet.</p>
   {% endif %}

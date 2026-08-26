@@ -9,18 +9,26 @@
 <body>
   {% if user %}
   <header class="top">
-    <nav class="nav">
-      {% for item in nav_items %}
-      <a href="{{ item.path }}" {% if request.url.path == item.path %}class="current"{% endif %}>{{ item.title }}</a>
-      {% endfor %}
-      <span class="spacer"></span>
-      <span class="who">{{ user.username }}</span>
-      <a href="/change-password">Password</a>
-      <form method="post" action="/logout" class="inline">
-        <input type="hidden" name="csrf" value="{{ csrf_token }}">
-        <button type="submit">Sign out</button>
-      </form>
-    </nav>
+    <div class="nav-shell">
+      <span class="who bar-who">{{ user.username }}</span>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" autocomplete="off">
+      <label for="nav-toggle" class="nav-toggle-btn">
+        <span class="nav-open">Menu</span>
+        <span class="nav-close">Close</span>
+      </label>
+      <nav class="nav">
+        {% for item in nav_items %}
+        <a href="{{ item.path }}" {% if request.url.path == item.path %}class="current"{% endif %}>{{ item.title }}</a>
+        {% endfor %}
+        <span class="spacer"></span>
+        <span class="who nav-who">{{ user.username }}</span>
+        <a href="/change-password">Password</a>
+        <form method="post" action="/logout" class="inline">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <button type="submit">Sign out</button>
+        </form>
+      </nav>
+    </div>
   </header>
   {% endif %}
   <main class="wrap">

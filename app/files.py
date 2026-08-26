@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
-from datetime import datetime
 from pathlib import Path
 
 from fastapi import UploadFile
@@ -97,7 +96,6 @@ def list_user_files(username: str) -> list[dict]:
             {
                 "name": path.name,
                 "size": _format_size(stat.st_size),
-                "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
             }
         )
     return rows

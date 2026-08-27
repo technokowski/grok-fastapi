@@ -69,6 +69,14 @@ Always start with `./run.sh` or `./venv/bin/uvicorn ...`. A plain `uvicorn` comm
 
 The app listens on port **8083** on all interfaces (`0.0.0.0`), which is what nginx and other machines on the network need. Point the reverse proxy at `http://127.0.0.1:8083` (or this host’s LAN address). Direct check: http://127.0.0.1:8083
 
+Uploads are allowed up to **100 MB**. nginx defaults to **1 MB** and will reject a 32 MB file before the app sees it. In the server (or location) block:
+
+```nginx
+client_max_body_size 100M;
+```
+
+Then reload nginx (`sudo nginx -s reload`).
+
 Fresh `data/` (no copied database):
 
 - Username: `admin`

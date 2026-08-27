@@ -11,6 +11,7 @@ from app.config import (
     FFMPEG_BIN,
     FFMPEG_TIMEOUT_SECS,
     MAX_UPLOAD_BYTES,
+    MAX_UPLOAD_MB,
     SHARE_DIR,
     UPLOADS_DIR,
 )
@@ -115,7 +116,7 @@ def save_upload(username: str, upload: UploadFile) -> Path:
                     break
                 size += len(chunk)
                 if size > MAX_UPLOAD_BYTES:
-                    raise ValueError("File is larger than the 50 MB limit.")
+                    raise ValueError(f"File is larger than the {MAX_UPLOAD_MB} MB limit.")
                 out.write(chunk)
     except Exception:
         dest.unlink(missing_ok=True)

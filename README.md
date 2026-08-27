@@ -157,19 +157,19 @@ Then restart.
 To add new pages/apps, follow these instructions:
 
 ```
-1. Route in app/main.py (copy /hello):
+# 1. Route in app/main.py (copy /hello):
 
 @app.get("/notes")
 def notes(request: Request):
     return render(request, "notes.html")
 
-2. Menu in app/web.py, in NAV_ITEMS:
+# 2. Menu in app/web.py, in NAV_ITEMS:
 
 {"path": "/notes", "title": "Notes"},
 
-Admins only: add "admin_only": True.
+# Admins only: add "admin_only": True.
 
-3. Page at app/templates/notes.html:
+# 3. Page at app/templates/notes.html:
 
 {% extends "base.html" %}
 {% block title %}Notes{% endblock %}
@@ -177,5 +177,5 @@ Admins only: add "admin_only": True.
 <h1>Notes</h1>
 <p>Your content here.</p>
 {% endblock %}
-
+```
 Restart (or let --reload pick it up). The new link shows in the top bar and in the mobile Menu. Do not add /notes to PUBLIC_PATHS unless you want it visible without signing in.

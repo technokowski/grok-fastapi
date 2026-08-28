@@ -4,4 +4,30 @@
 <h1>Welcome</h1>
 <p>Signed in as <strong>{{ user.username }}</strong>.</p>
 <p>Use the top bar to open other pages. New apps go there once you add a route.</p>
+{% if public_share_enabled %}
+<section class="shared-block">
+  <h2>Shared files</h2>
+  <p class="muted">Files you and others have shared. Anyone can download these, including visitors who are not signed in.</p>
+  {% if shared_files %}
+  <ul class="file-list">
+    {% for f in shared_files|default([]) %}
+    <li class="file-row">
+      <div class="file-head">
+        <span class="file-name">{{ f.name }}</span>
+        <span class="file-size">{{ f.username }}</span>
+      </div>
+      {% if f.is_audio %}
+      <audio class="file-audio" controls preload="none" src="/share/download/{{ f.id }}"></audio>
+      {% endif %}
+      <div class="file-actions">
+        <a class="action" href="/share/download/{{ f.id }}">Download</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No files are shared yet.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

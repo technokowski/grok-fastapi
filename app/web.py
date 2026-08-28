@@ -16,6 +16,8 @@ from app.config import (
     SESSION_COOKIE,
     SESSION_TTL_DAYS,
 )
+from app.db import SessionLocal
+from app.files import list_public_shares
 from app.security import digest_equal, new_token
 
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
@@ -102,6 +104,11 @@ def render(request: Request, template: str, status_code: int = 200, **ctx) -> Re
     user: CurrentUser | None = getattr(request.state, "user", None)
     csrf_token = csrf_from(request)
     flash = pop_flash(request)
+    if ctx.get("shared_files") is None and PUBLIC_SHARE_ENABLED:
+        with SessionLocal() as db:
+            ctx["shared_files"] = list_public_shares(db)
+    elif ctx.get("shared_files") is None:
+        ctx["shared_files"] = []
     response = templates.TemplateResponse(
         request,
         template,

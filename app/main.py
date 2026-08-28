@@ -101,20 +101,6 @@ async def auth_gate(request: Request, call_next):
     return await call_next(request)
 
 
-def public_shared_files(db: Session) -> list[dict]:
-    if not PUBLIC_SHARE_ENABLED:
-        return []
-    rows = db.execute(
-        select(SharedFile, User.username)
-        .join(User, User.id == SharedFile.user_id)
-        .order_by(SharedFile.created_at.desc())
-    ).all()
-    return [
-        {"id": item.id, "name": item.original_name, "username": username}
-        for item, username in rows
-    ]
-
-
 def shared_names_for(db: Session, user_id: int) -> set[str]:
     if not PUBLIC_SHARE_ENABLED:
         return set()
@@ -296,8 +282,8 @@ def share_download(share_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/login")
-def login_form(request: Request, db: Session = Depends(get_db)):
-    return render(request, "login.html", shared_files=public_shared_files(db))
+def login_form(request: Request):
+    return render(request, "login.html")
 
 
 @app.post("/login")
@@ -313,7 +299,6 @@ def login(
             request,
             "login.html",
             error="Invalid form token. Try again.",
-            shared_files=public_shared_files(db),
             status_code=403,
         )
 
@@ -325,7 +310,6 @@ def login(
             request,
             "login.html",
             error="Too many sign-in attempts. Try again in 15 minutes.",
-            shared_files=public_shared_files(db),
             status_code=429,
         )
 
@@ -336,7 +320,6 @@ def login(
             request,
             "login.html",
             error="Invalid username or password.",
-            shared_files=public_shared_files(db),
             status_code=401,
         )
 

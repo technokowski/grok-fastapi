@@ -7,14 +7,19 @@ from pathlib import Path
 
 from fastapi import UploadFile
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
+
 from app.config import (
     FFMPEG_BIN,
     FFMPEG_TIMEOUT_SECS,
     MAX_UPLOAD_BYTES,
     MAX_UPLOAD_MB,
+    PUBLIC_SHARE_ENABLED,
     SHARE_DIR,
     UPLOADS_DIR,
 )
+from app.models import SharedFile
 from app.security import new_token
 
 SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
@@ -203,3 +208,30 @@ def remove_share_file(stored_name: str) -> None:
     path = resolve_share_file(stored_name)
     if path is not None:
         path.unlink(missing_ok=True)
+
+
+AUDIO_EXTS = (".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac")
+
+
+def is_audio_name(name: str) -> bool:
+    lower = name.lower()
+    return any(lower.endswith(ext) for ext in AUDIO_EXTS)
+
+
+def list_public_shares(db: Session) -> list[dict]:
+    if not PUBLIC_SHARE_ENABLED:
+        return []
+    items = db.scalars(
+        select(SharedFile)
+        .options(joinedload(SharedFile.user))
+        .order_by(SharedFile.created_at.desc())
+    ).unique().all()
+    return [
+        {
+            "id": item.id,
+            "name": item.original_name,
+            "username": item.user.username if item.user else "",
+            "is_audio": is_audio_name(item.original_name),
+        }
+        for item in items
+    ]

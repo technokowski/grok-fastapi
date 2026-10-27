@@ -21,7 +21,7 @@ from app.auth import (
     record_login_attempt,
     too_many_attempts,
 )
-from app.config import APP_DIR, PUBLIC_PATHS, PUBLIC_PREFIXES, PUBLIC_SHARE_ENABLED
+from app.config import APP_DIR, PUBLIC_BASE_URL, PUBLIC_PATHS, PUBLIC_PREFIXES, PUBLIC_SHARE_ENABLED
 from app.db import get_db, init_db
 from app.files import (
     convert_wav_to_mp3,
@@ -598,5 +598,5 @@ def user_reset_link(
         return redirect("/users", "User not found.", "error")
 
     token = create_reset_token(db, row)
-    reset_url = str(request.base_url).rstrip("/") + f"/reset-password/{token}"
+    reset_url = PUBLIC_BASE_URL.rstrip("/") + f"/reset-password/{token}"
     return render(request, "reset_link.html", target_user=row, reset_url=reset_url)

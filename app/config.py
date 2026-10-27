@@ -35,5 +35,9 @@ PUBLIC_PREFIXES = (
 # remove Share/Unshare on the Files page. Sign-in is unchanged.
 PUBLIC_SHARE_ENABLED = True
 
+# Origin written into one-time password reset links. Behind nginx the app
+# only sees the short host (http://wavelength), which does not resolve.
+PUBLIC_BASE_URL = "https://wavelength.dextermodem.com"
+
 BOOTSTRAP_USERNAME = "admin"
 BOOTSTRAP_PASSWORD = "root"
